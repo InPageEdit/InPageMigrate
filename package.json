@@ -9,5 +9,16 @@
     "prettier": "^2.2.0",
     "webpack": "^5.6.0",
     "webpack-cli": "^4.2.0"
+  },
+  "scripts": {
+    "test": "eslint ./index.js ./module/*.js ./method/*.js",
+    "dev": "webpack --watch --o ./dev/[name].test.js",
+    "clear": "rd /s /q dist",
+    "style": "stylus ./style/index.styl -o ./style/",
+    "prettier": "prettier --write ./index.js ./module/*.js",
+    "build:linux": "webpack && MINIFY=1 webpack",
+    "build:windows": "webpack && set MINIFY=1 && webpack",
+    "publish:stable": "npm publish --tag latest",
+    "publish:canary": "npm run build:windows && npm publish --tag canary && yarn clear"
   }
 }

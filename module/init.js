@@ -1,4 +1,5 @@
 const getPageData = require('./getPageData')
+const resolvePage = require('./resolvePage')
 
 module.exports = () => {
 
@@ -17,14 +18,16 @@ module.exports = () => {
     $startBtn = $('<button>', { class: 'ipm-startBtn', text: '获取信息' }),
     $postButton = $('<button>', { class: 'ipm-startBtn', text: '确认迁移', disabled: true }),
     $detailArea = $('<section>', { class: 'ipm-detailArea', text: '操作日志' }),
-    $progressArea = $('<pre>', { class: 'ipm-progressArea' })
+    $progressArea = $('<ul>', { class: 'ipm-progressArea' })
 
   $form.append(
-    $('<h2>', { text: '快速迁移页面' }),
+    $('<h3>', { text: '快速迁移页面' }),
     $('<p>', { text: '您正在从 API 接口为 ' + fromUrl + ' 的 wiki 迁移内容。' }),
     $('<label>', { style: 'display: block' }).append(
-      '请指定目标页面名称',
-      $pageName
+      '迁移：',
+      $pageName,
+      ' → ',
+      $('<i>', { text: wgPageName })
     ),
     $('<div>', { class: 'ipm-container' }).append(
       $('<div>', { class: 'ipm-buttonArea' }).append(
@@ -39,8 +42,12 @@ module.exports = () => {
 
   // @function pushProgress
   function pushProgress(str) {
-    $progressArea.append(
-      $('<li>', { html: str })
+    var now = new Date()
+    $progressArea.prepend(
+      $('<li>').append(
+        `[${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}] `,
+        str
+      )
     )
   }
 
@@ -65,7 +72,7 @@ module.exports = () => {
     var { parse } = pageData
 
     // 获取所需页面列表
-    $form.data('pageList', [wgPageName])
+    $form.data('pageList', [$pageName.val()])
     $.each(parse.templates, (_, item) => {
       var pageList = $form.data('pageList')
       if (item.exists === '') pageList.push(item['*'])
@@ -77,7 +84,7 @@ module.exports = () => {
 
     // 展示所需页面
     pushProgress('【信息】成功获取页面信息，需要迁移以下页面：' + neededPages.join('、') + ' (共计' + neededPages.length + '个页面)')
-    pushProgress('【指示】请确认是否开始迁移……')
+    pushProgress('【确认】请确认是否开始迁移……')
 
     $startBtn.attr('disabled', false)
     $postButton.attr('disabled', false)
@@ -86,9 +93,27 @@ module.exports = () => {
   $postButton.click(function () {
     var neededPages = $form.data('pageList')
     if (!neededPages) {
-      pushProgress('【错误】找不到需要页面列表，请重新获取页面信息。')
+      pushProgress('【错误】找不到需要的页面列表，请重新获取页面信息。')
       return
     }
-    pushProgress('【信息】施工中！！！')
+
+    async function loopResolve(i) {
+      var from = neededPages[i],
+        to = neededPages[i]
+      if (i === 0) to = wgPageName
+      pushProgress(`【信息】正在从 ${from} 迁移页面到 ${to} (${i + 1}/${neededPages.length})`)
+      await resolvePage(fromUrl, from, to, pushProgress)
+      if (i < (neededPages.length - 1)) {
+        loopResolve(i + 1)
+      } else {
+        pushProgress('【完成】页面迁移已完成，请刷新页面后检查。')
+        pushProgress(
+          $('<a>', { href: mw.util.getUrl(wgPageName, { action: 'purge' }), text: '立即刷新' })
+        )
+      }
+    }
+
+    loopResolve(0)
+
   })
 }
