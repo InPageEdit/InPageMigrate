@@ -1,0 +1,13 @@
+{
+  "name": "mediawiki-inpagemigrate",
+  "version": "1.0.0",
+  "description": "Quick migrate wiki pages from another wiki",
+  "main": "index.js",
+  "author": "Dragon-Fish",
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^2.2.0",
+    "webpack": "^5.6.0",
+    "webpack-cli": "^4.2.0"
+  }
+}
